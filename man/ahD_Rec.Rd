@@ -40,7 +40,7 @@ If the argument 'mass' is missing or if an integer vector is supplied for 'mass'
 If a double vector is supplied for the argument 'mass', then the depths are given as doubles.
 }
 \description{
-This function computes the angular halfspace depth (it is not assumed that the points are in general position).
+This function computes the angular halfspace depth using the recursive algorithm (it is not assumed that the points are in general position). 'ahD_Rec' is deprecated and should no longer be used. Applications should use "ahD" instead.
 }
 \details{
 The routine uses the recursive algorithm of Dyckerhoff, Nagy (2024). Unless method='GP', it does not assume that the points are in general position. The points in z may coincide with points in x. z or ind may be missing (but not both).
@@ -65,14 +65,14 @@ count <- as.integer(rep(1,n))
 
 res <- matrix(nrow=20, ncol=m+l)
 
-# combinatorial algorithm, w/o argument 'mass', different target dimensions and methods
+# recursive algorithm, w/o argument 'mass', different target dimensions and methods
 system.time(res[ 1,] <- ahD_Rec(x, z = z, ind = 1:l, target = 1))
 system.time(res[ 2,] <- ahD_Rec(x, z = z, ind = 1:l, target = 2, method = "single"))
 system.time(res[ 3,] <- ahD_Rec(x, z = z, ind = 1:l, target = 2, method = "multiple"))
 system.time(res[ 4,] <- ahD_Rec(x, z = z, ind = 1:l, target = 3, method = "nGP"))
 system.time(res[ 5,] <- ahD_Rec(x, z = z, ind = 1:l, target = 3, method = "GP"))
 
-# combinatorial algorithm, pass a vector of probabilitiues to mass, different target dimensions
+# recursive algorithm, pass a vector of probabilitiues to mass, different target dimensions
 #and methods
 system.time(res[ 6,] <- ahD_Rec(x, mass = prob, z = z, ind = 1:l, target = 1))
 system.time(res[ 7,] <- ahD_Rec(x, mass = prob, z = z, ind = 1:l, target = 2, method = "single"))
@@ -82,7 +82,7 @@ system.time(res[10,] <- ahD_Rec(x, mass = prob, z = z, ind = 1:l, target = 3, me
 # multiply by n since the depths are since we want to compare with the integer version of the depth
 res[6:10,] <- res[6:10,] * n
 
-# combinatorial algorithm, pass a vector of multiplicieties to mass, different target dimensions
+# recursive algorithm, pass a vector of multiplicieties to mass, different target dimensions
 # and methods
 system.time(res[11,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 1))
 system.time(res[12,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 2, method = "single"))
@@ -90,7 +90,7 @@ system.time(res[13,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 2, m
 system.time(res[14,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 3, method = "nGP"))
 system.time(res[15,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 3, method = "GP"))
 
-# recursive algorithm, different target dimensions and methods
+# combinatorial algorithm, different target dimensions and methods
 system.time(res[16,] <- ahD_Comb(x, z = z, ind = 1:l, target = 1))
 system.time(res[17,] <- ahD_Comb(x, z = z, ind = 1:l, target = 2, method = "single"))
 system.time(res[18,] <- ahD_Comb(x, z = z, ind = 1:l, target = 2, method = "multiple"))

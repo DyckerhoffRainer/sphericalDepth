@@ -1,6 +1,6 @@
 #' Angular halfspace depth
 #'
-#' This function computes the angular halfspace depth (it is not assumed that the points are in general position).
+#' This function computes the angular halfspace depth using the recursive algorithm (it is not assumed that the points are in general position). 'ahD_Rec' is deprecated and should no longer be used. Applications should use "ahD" instead.
 #'
 #'@param x a matrix of format n x d that contains the data points with respect to which the depth has to be computed
 #'@param mass a vector of length n that contains either the probabilities or the (integer) multiplicities of the n data points
@@ -49,14 +49,14 @@
 #'
 #'res <- matrix(nrow=20, ncol=m+l)
 #'
-#'# combinatorial algorithm, w/o argument 'mass', different target dimensions and methods
+#'# recursive algorithm, w/o argument 'mass', different target dimensions and methods
 #'system.time(res[ 1,] <- ahD_Rec(x, z = z, ind = 1:l, target = 1))
 #'system.time(res[ 2,] <- ahD_Rec(x, z = z, ind = 1:l, target = 2, method = "single"))
 #'system.time(res[ 3,] <- ahD_Rec(x, z = z, ind = 1:l, target = 2, method = "multiple"))
 #'system.time(res[ 4,] <- ahD_Rec(x, z = z, ind = 1:l, target = 3, method = "nGP"))
 #'system.time(res[ 5,] <- ahD_Rec(x, z = z, ind = 1:l, target = 3, method = "GP"))
 #'
-#'# combinatorial algorithm, pass a vector of probabilitiues to mass, different target dimensions
+#'# recursive algorithm, pass a vector of probabilitiues to mass, different target dimensions
 #'#and methods
 #'system.time(res[ 6,] <- ahD_Rec(x, mass = prob, z = z, ind = 1:l, target = 1))
 #'system.time(res[ 7,] <- ahD_Rec(x, mass = prob, z = z, ind = 1:l, target = 2, method = "single"))
@@ -66,7 +66,7 @@
 #'# multiply by n since the depths are since we want to compare with the integer version of the depth
 #'res[6:10,] <- res[6:10,] * n
 #'
-#'# combinatorial algorithm, pass a vector of multiplicieties to mass, different target dimensions
+#'# recursive algorithm, pass a vector of multiplicieties to mass, different target dimensions
 #'# and methods
 #'system.time(res[11,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 1))
 #'system.time(res[12,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 2, method = "single"))
@@ -74,7 +74,7 @@
 #'system.time(res[14,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 3, method = "nGP"))
 #'system.time(res[15,] <- ahD_Rec(x, mass = count, z = z, ind = 1:l, target = 3, method = "GP"))
 #'
-#'# recursive algorithm, different target dimensions and methods
+#'# combinatorial algorithm, different target dimensions and methods
 #'system.time(res[16,] <- ahD_Comb(x, z = z, ind = 1:l, target = 1))
 #'system.time(res[17,] <- ahD_Comb(x, z = z, ind = 1:l, target = 2, method = "single"))
 #'system.time(res[18,] <- ahD_Comb(x, z = z, ind = 1:l, target = 2, method = "multiple"))
@@ -101,7 +101,7 @@ ahD_Rec <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c
   }
   if (missing(mass)) {
     .C(
-      "aHD_R_int",
+      "aHD_int",
       as.double(t(x)),
       as.integer(nrow(x)),
       as.integer(ncol(x)),
@@ -109,8 +109,9 @@ ahD_Rec <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c
       as.integer(length(z) / as.integer(ncol(x))),
       if (!is.null(ind)) as.integer(ind - 1) else NA,
       as.integer(length(ind)),
-      as.integer(target),
       result = integer(length(z) / as.integer(ncol(x)) + length(ind)),
+      as.integer(1),
+      as.integer(target),
       as.integer(method),
       as.integer(nThreads),
       NAOK = TRUE,
@@ -120,7 +121,7 @@ ahD_Rec <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c
   else
     if (is.integer(mass)) {
       .C(
-        "aHD_R_int_val",
+        "aHD_int_val",
         as.double(t(x)),
         as.integer(mass),
         as.integer(nrow(x)),
@@ -129,8 +130,9 @@ ahD_Rec <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c
         as.integer(length(z) / as.integer(ncol(x))),
         if (!is.null(ind)) as.integer(ind - 1) else NA,
         as.integer(length(ind)),
-        as.integer(target),
         result = integer(length(z) / as.integer(ncol(x)) + length(ind)),
+        as.integer(1),
+        as.integer(target),
         as.integer(method),
         as.integer(nThreads),
         NAOK = TRUE,
@@ -139,7 +141,7 @@ ahD_Rec <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c
     }
   else {
     .C(
-      "aHD_R_double_val",
+      "aHD_double_val",
       as.double(t(x)),
       as.double(mass),
       as.integer(nrow(x)),
@@ -148,8 +150,9 @@ ahD_Rec <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c
       as.integer(length(z) / as.integer(ncol(x))),
       if (!is.null(ind)) as.integer(ind - 1) else NA,
       as.integer(length(ind)),
-      as.integer(target),
       result = double(length(z) / as.integer(ncol(x)) + length(ind)),
+      as.integer(1),
+      as.integer(target),
       as.integer(method),
       as.integer(nThreads),
       NAOK = TRUE,

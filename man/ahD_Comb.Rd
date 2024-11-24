@@ -40,7 +40,7 @@ If the argument 'mass' is missing or if an integer vector is supplied for 'mass'
 If a double vector is supplied for the argument 'mass', then the depths are given as doubles.
 }
 \description{
-This function computes the angular halfspace depth (it is not assumed that the points are in general position).
+This function computes the angular halfspace depth using the combinatorial algorithm (it is not assumed that the points are in general position). 'ahD_Comb' is deprecated and should no longer be used. Applications should use "ahD" instead.
 }
 \details{
 The routine uses the combinatorial algorithm of Dyckerhoff, Nagy (2024). Unless method='GP', it does not assume that the points are in general position. The points in z may coincide with points in x. z or ind may be missing (but not both).

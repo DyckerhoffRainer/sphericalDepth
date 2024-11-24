@@ -1,7 +1,7 @@
 Package: sphericalDepth
 Type: Package
 Title: Computation of the spherical halfspace depth
-Version: 0.9.0
+Version: 0.9.1
 Author: Rainer Dyckerhoff
 Maintainer: Rainer Dyckerhoff <rainer.dyckerhoff@statistik.uni-koeln.de>
 Description: This package provides two routines to compute the spherical halfspace depth, also known as angular halfspace depth or angular Tukey depth. For a description of the algorithms, see: Dyckerhoff, R., Nagy, S. (2024) Exact computation of angular halfspace depth.

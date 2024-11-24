@@ -5,7 +5,8 @@
 namespace DataDepth {
 
 	/*******************************************************************************************************************************/
-	enum Algorithm { standard, adaptive, single, multiple, nGP, GP };
+	enum AlgType { comb, rec };
+	enum AlgSubtype { standard, adaptive, single, multiple, nGP, GP };
 
 	// signed measure depth in dimension d = 1, i.e., on the line
 	template<typename val_t>
@@ -32,43 +33,22 @@ namespace DataDepth {
 	//extern "C" void aHD_R(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int result[], const Algorithm& Alg = standard);
 
 	template<typename val_t>
-	void aHD_R(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg = standard, const int& nThreads = 0);
+	void aHD(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg = comb, const int& target = 2, const AlgSubtype& algSub = standard, const int& nThreads = 0);
 	template<typename val_t>
-	void aHD_R(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg = standard, const int& nThreads = 0);
+	void aHD(const double x[],                    int& n, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg = comb, const int& target = 2, const AlgSubtype& algSub = standard, const int& nThreads = 0);
 
-	extern "C" void aHD_R_int_val(const double x[], const int val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int result[], const Algorithm& alg, const int& nThreads) {
-		aHD_R(x, val, n, d, z, m, ind, l, target, result, alg, nThreads);
+	extern "C" void aHD_int_val(const double x[], const int val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, int result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
+		aHD(x, val, n, d, z, m, ind, l, result, alg, target, algSub, nThreads);
 	};
-	extern "C" void aHD_R_double_val(const double x[], const double val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& alg, const int& nThreads) {
-		aHD_R(x, val, n, d, z, m, ind, l, target, result, alg, nThreads);
-	};
-
-	extern "C" void aHD_R_int(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int result[], const Algorithm& alg, const int& nThreads) {
-		aHD_R(x, n, d, z, m, ind, l, target, result, alg, nThreads);
-	};
-	extern "C" void aHD_R_double(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& alg, const int& nThreads) {
-		aHD_R(x, n, d, z, m, ind, l, target, result, alg, nThreads);
+	extern "C" void aHD_double_val(const double x[], const double val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, double result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
+		aHD(x, val, n, d, z, m, ind, l, result, alg, target, algSub, nThreads);
 	};
 
-
-
-	template<typename val_t>
-	void aHD_C(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg = standard, const int& nThreads = 0);
-	template<typename val_t>
-	void aHD_C(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg = standard, const int& nThreads = 0);
-
-	extern "C" void aHD_C_int_val(const double x[], const int val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int result[], const Algorithm& alg, const int& nThreads) {
-		aHD_C(x, val, n, d, z, m, ind, l, target, result, alg, nThreads);
+	extern "C" void aHD_int(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, int result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
+		aHD(x, n, d, z, m, ind, l, result, alg, target, algSub, nThreads);
 	};
-	extern "C" void aHD_C_double_val(const double x[], const double val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& alg, const int& nThreads) {
-		aHD_C(x, val, n, d, z, m, ind, l, target, result, alg, nThreads);
-	};
-
-	extern "C" void aHD_C_int(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int result[], const Algorithm& alg, const int& nThreads) {
-		aHD_C(x, n, d, z, m, ind, l, target, result, alg, nThreads);
-	};
-	extern "C" void aHD_C_double(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& alg, const int& nThreads) {
-		aHD_C(x, n, d, z, m, ind, l, target, result, alg, nThreads);
+	extern "C" void aHD_double(const double x[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, double result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
+		aHD(x, n, d, z, m, ind, l, result, alg, target, algSub, nThreads);
 	};
 
 

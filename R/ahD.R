@@ -1,11 +1,15 @@
 #' Angular halfspace depth
 #'
-#' This function computes the angular halfspace depth using the combinatorial algorithm (it is not assumed that the points are in general position). 'ahD_Comb' is deprecated and should no longer be used. Applications should use "ahD" instead.
+#' This function computes the angular halfspace depth (it is not assumed that the points are in general position).
 #'
 #'@param x a matrix of format n x d that contains the data points with respect to which the depth has to be computed
 #'@param mass a vector of length n that contains either the probabilities or the (integer) multiplicities of the n data points
 #'@param z a matrix of format m x d containing the points whose depth should be computed
 #'@param ind a vector of length l containing the indices of the data points x whose depth should be computed
+#'@param alg string, possible values are "comb" and "rec".
+#'Denotes the algorithm that is used to compute the signed halfspace depth in the target dimension.
+#'
+#'If alg="comb" the combinatorial algorithm is used to compute the angular halfspace depth. If alg="rec" the recursive algorithm is used. For details, see Dyckerhoff, Nagy (2024).
 #'@param target the dimension to which the data is projected, possible values are 1, 2, 3
 #'@param method string, possible values are "standard", "adaptive", "single", "multiple", "nGP", "GP".
 #'Denotes the variant of the algorithm that is used to compute the signed halfspace depth in the target dimension.
@@ -20,11 +24,10 @@
 #'If a double vector is supplied for the argument 'mass', then the depths are given as doubles.
 #'
 #'@details
-#'The routine uses the combinatorial algorithm of Dyckerhoff, Nagy (2024). Unless method='GP', it does not assume that the points are in general position. The points in z may coincide with points in x. z or ind may be missing (but not both).
+#'Unless target= 3 and method='GP', the algorithm does not assume that the points are in general position. The points in z may coincide with points in x. z or ind may be missing (but not both).
 #'
-#'Regarding the choice of parameters 'target' and 'method' the default values usually will give the best results.
-#'In most cases this routine ('ahD_Comb') called with the default values for 'target' and 'method' will give the best results
-#'and will also be faster than 'ahD_Rec'.
+#'Regarding the choice of parameters 'alg', 'target' and 'method' the default values usually will give the best results.
+#'In most cases the combiantorial algorithm (alg="comb") called with the default values for 'target' and 'method' will give the best results.
 #'
 #'
 #'
@@ -50,43 +53,65 @@
 #'# vector of point multiplicities
 #'count <- as.integer(rep(1,n))
 #'
-#'res <- matrix(nrow=20, ncol=m+l)
+#'res <- matrix(nrow=30, ncol=m+l)
 #'
 #'# combinatorial algorithm, w/o argument 'mass', different target dimensions and methods
-#'system.time(res[ 1,] <- ahD_Comb(x, z = z, ind = 1:l, target = 1))
-#'system.time(res[ 2,] <- ahD_Comb(x, z = z, ind = 1:l, target = 2, method = "single"))
-#'system.time(res[ 3,] <- ahD_Comb(x, z = z, ind = 1:l, target = 2, method = "multiple"))
-#'system.time(res[ 4,] <- ahD_Comb(x, z = z, ind = 1:l, target = 3, method = "nGP"))
-#'system.time(res[ 5,] <- ahD_Comb(x, z = z, ind = 1:l, target = 3, method = "GP"))
+#'system.time(res[ 1,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 1))
+#'system.time(res[ 2,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 2, method = "single"))
+#'system.time(res[ 3,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple"))
+#'system.time(res[ 4,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP"))
+#'system.time(res[ 5,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP"))
 #'
 #'# combinatorial algorithm, pass a vector of probabilities to mass, different target dimensions
 #'# and methods
-#'system.time(res[ 6,] <- ahD_Comb(x, mass = prob, z = z, ind = 1:l, target = 1))
-#'system.time(res[ 7,] <- ahD_Comb(x, mass = prob, z = z, ind = 1:l, target = 2, method = "single"))
-#'system.time(res[ 8,] <- ahD_Comb(x, mass = prob, z = z, ind = 1:l, target = 2, method = "multiple"))
-#'system.time(res[ 9,] <- ahD_Comb(x, mass = prob, z = z, ind = 1:l, target = 3, method = "nGP"))
-#'system.time(res[10,] <- ahD_Comb(x, mass = prob, z = z, ind = 1:l, target = 3, method = "GP"))
+#'system.time(res[ 6,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 1))
+#'system.time(res[ 7,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 2, method = "single"))
+#'system.time(res[ 8,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple"))
+#'system.time(res[ 9,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP"))
+#'system.time(res[10,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP"))
 #'# multiply by n since the depths are since we want to compare with the integer version of the depth
 #'res[6:10,] <- res[6:10,] * n
 #'
 #'# combinatorial algorithm, pass a vector of multiplicities to mass, different target dimensions
 #'# and methods
-#'system.time(res[11,] <- ahD_Comb(x, mass = count, z = z, ind = 1:l, target = 1))
-#'system.time(res[12,] <- ahD_Comb(x, mass = count, z = z, ind = 1:l, target = 2, method = "single"))
-#'system.time(res[13,] <- ahD_Comb(x, mass = count, z = z, ind = 1:l, target = 2, method = "multiple"))
-#'system.time(res[14,] <- ahD_Comb(x, mass = count, z = z, ind = 1:l, target = 3, method = "nGP"))
-#'system.time(res[15,] <- ahD_Comb(x, mass = count, z = z, ind = 1:l, target = 3, method = "GP"))
+#'system.time(res[11,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 1))
+#'system.time(res[12,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 2, method = "single"))
+#'system.time(res[13,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple"))
+#'system.time(res[14,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP"))
+#'system.time(res[15,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP"))
 #'
-#'# recursive algorithm, different target dimensions and methods
-#'system.time(res[16,] <- ahD_Rec(x, z = z, ind = 1:l, target = 1))
-#'system.time(res[17,] <- ahD_Rec(x, z = z, ind = 1:l, target = 2, method = "single"))
-#'system.time(res[18,] <- ahD_Rec(x, z = z, ind = 1:l, target = 2, method = "multiple"))
-#'system.time(res[19,] <- ahD_Rec(x, z = z, ind = 1:l, target = 3, method = "nGP"))
-#'system.time(res[20,] <- ahD_Rec(x, z = z, ind = 1:l, target = 3, method = "GP"))
+#'# recursive algorithm, w/o argument 'mass', different target dimensions and methods
+#'system.time(res[16,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 1))
+#'system.time(res[17,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 2, method = "single"))
+#'system.time(res[18,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple"))
+#'system.time(res[19,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP"))
+#'system.time(res[20,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP"))
+#'
+#'# recursive algorithm, pass a vector of probabilities to mass, different target dimensions
+#'# and methods
+#'system.time(res[21,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 1))
+#'system.time(res[22,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 2, method = "single"))
+#'system.time(res[23,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple"))
+#'system.time(res[24,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP"))
+#'system.time(res[25,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP"))
+#'# multiply by n since the depths are since we want to compare with the integer version of the depth
+#'res[6:10,] <- res[21:25,] * n
+#'
+#'# recursive algorithm, pass a vector of multiplicities to mass, different target dimensions
+#'# and methods
+#'system.time(res[26,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 1))
+#'system.time(res[27,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 2, method = "single"))
+#'system.time(res[28,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple"))
+#'system.time(res[29,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP"))
+#'system.time(res[30,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP"))
 #'
 #'print(paste("Number of different results:  ",sum(apply(res, 2, max) - apply(res, 2, min) > 1e-13)))
 
-ahD_Comb <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = c("standard", "adaptive", "single", "multiple", "nGP", "GP"), nThreads = 0) {
+ahD <- function(x, mass = NULL, z = NULL, ind = NULL, alg = c("comb", "rec"), target = 2, method = c("standard", "adaptive", "single", "multiple", "nGP", "GP"), nThreads = 0) {
+  alg <- match.arg(alg)
+  alg <- switch(alg,
+                comb = 0,
+                rec = 1)
   method <- match.arg(method)
   method <- switch(method,
                    standard = 0,
@@ -112,7 +137,7 @@ ahD_Comb <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = 
       if (!is.null(ind)) as.integer(ind - 1) else NA,
       as.integer(length(ind)),
       result = integer(length(z) / as.integer(ncol(x)) + length(ind)),
-      as.integer(0),
+      as.integer(alg),
       as.integer(target),
       as.integer(method),
       as.integer(nThreads),
@@ -133,7 +158,7 @@ ahD_Comb <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = 
         if (!is.null(ind)) as.integer(ind - 1) else NA,
         as.integer(length(ind)),
         result = integer(length(z) / as.integer(ncol(x)) + length(ind)),
-        as.integer(0),
+        as.integer(alg),
         as.integer(target),
         as.integer(method),
         as.integer(nThreads),
@@ -153,7 +178,7 @@ ahD_Comb <- function(x, mass = NULL, z = NULL, ind = NULL, target = 2, method = 
       if (!is.null(ind)) as.integer(ind - 1) else NA,
       as.integer(length(ind)),
       result = double(length(z) / as.integer(ncol(x)) + length(ind)),
-      as.integer(0),
+      as.integer(alg),
       as.integer(target),
       as.integer(method),
       as.integer(nThreads),

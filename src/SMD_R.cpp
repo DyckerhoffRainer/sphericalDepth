@@ -420,8 +420,6 @@ namespace DataDepth {
 		}
 	}
 
- 	/***************************************************************************************************************************/
-
 	// Signed halfspace depth of z_1,...z_m and x_i1,...x_il w.r.t. x_1,...x_n in R^1, i.e., on the real line
 
 	template<typename val_t>
@@ -852,6 +850,8 @@ namespace DataDepth {
 		}
 	}
 
+	/***************************************************************************************************************************/
+
 	// Angular halfspace depth in d = 1, i.e., on { +1, -1 }
 
 	template<typename val_t>
@@ -877,14 +877,14 @@ namespace DataDepth {
 	// Angular halfspace depth in d = 2, i.e., on the circle
 
 	template<typename val_t>
-	void aHD_d2(const double x[], const val_t val[], int& n, const double z[], int& m, const int ind[], int& l, val_t result[], const Algorithm& Alg) {
+	void aHD_d2(const double x[], const val_t val[], int& n, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgSubtype& alg) {
 		unique_ptr<double[]> xx{ new double[n] };
 		unique_ptr<double[]> zz{ new double[m] };
 		unique_ptr<val_t[]> valX{ new val_t[n] };
 		unique_ptr<int[]> valZ{ new int[m] };
 		val_t totalMass{ }, negMass{ };
-		Algorithm localAlg{ Alg };
-		if ((Alg != single) && (Alg != multiple)) localAlg = (m + l > limitSingle) ? multiple : single;
+		AlgSubtype localAlg{ alg };
+		if ((alg != single) && (alg != multiple)) localAlg = (m + l > limitSingle) ? multiple : single;
 		// Parallelization of these loops was tested but is not advisable
 		//#pragma omp parallel for default(none), shared(x,val,xx,valX,totalMass,negMass)
 		for (int i = 0; i < n; i++) {
@@ -939,7 +939,7 @@ namespace DataDepth {
 	// Angular halfspace depth in d = 3, i.e., on the 2-sphere
 
 	template<typename val_t>
-	void aHD_d3(const double xx[], const val_t val[], int& n, const double zz[], int& m, const int ind[], int& l, val_t result[], const Algorithm& Alg) {
+	void aHD_d3(const double xx[], const val_t val[], int& n, const double zz[], int& m, const int ind[], int& l, val_t result[], const AlgSubtype& alg) {
 		unique_ptr<double[]> x{ new double[3 * n] };
 		unique_ptr<double[]> z{ new double[3 * m] };
 		unique_ptr<double[]> px{ new double[2 * n] };
@@ -948,7 +948,7 @@ namespace DataDepth {
 		unique_ptr<int[]> valZ{ new int[m] };
 		val_t totalMass{ }, negMass{ };
 
-		Algorithm localAlg{ (Alg == standard) ? nGP : Alg };
+		AlgSubtype localAlg{ (alg == standard) ? nGP : alg };
 
 		static mt19937 gen(1234);
 		normal_distribution<double> normal(0, 1);
@@ -1003,15 +1003,17 @@ namespace DataDepth {
 				result[m + i] = numeric_limits<val_t>::max();
 	}
 
+	/***************************************************************************************************************************/
+
 	// Angular halfspace depth in arbitrary dimension, recursive algorithm
 
 	template<typename val_t>
-	void aHD_Rec(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg) {
+	void aHD_Rec(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg, const int& target, const AlgSubtype& algSub) {
 		if (d > target) {
 			int pd{ d - 1 };
 
 			for (int i = 0; i < m + l; i++) result[i] = numeric_limits<val_t>::max();
-			#pragma omp parallel for default(none), shared(n,d,pd,x,z,m,val,target,ind,l,Alg,result)
+			#pragma omp parallel for default(none), shared(n,d,pd,x,z,m,val,target,ind,l,alg,algSub,result)
 			for (int i = 0; i < n; i++) {
 				if (!isnan(x[i * d])) {
 					unique_ptr<double[]> pz{ new double[m * (d - 1)] {} };
@@ -1027,7 +1029,7 @@ namespace DataDepth {
 						if (pos) nPos += val[j]; else nNeg += val[j];
 					}
 					val_t minP = min(nPos, nNeg);
-					aHD_Rec(px.get(), val, n, pd, pz.get(), m, ind, l, target, res.get(), Alg);
+					aHD_Rec(px.get(), val, n, pd, pz.get(), m, ind, l, res.get(), alg, target, algSub);
 					#pragma omp critical
 					{
 						for (int i = 0; i < m + l; i++)
@@ -1040,8 +1042,8 @@ namespace DataDepth {
 		else {
 			switch (d) {
 			case 1: aHD_d1(x, val, n, z, m, ind, l, result); return;
-			case 2: aHD_d2(x, val, n, z, m, ind, l, result, Alg); return;
-			case 3: aHD_d3(x, val, n, z, m, ind, l, result, Alg); return;
+			case 2: aHD_d2(x, val, n, z, m, ind, l, result, algSub); return;
+			case 3: aHD_d3(x, val, n, z, m, ind, l, result, algSub); return;
 			}
 		}
 	}
@@ -1049,12 +1051,12 @@ namespace DataDepth {
 	// Angular halfspace depth in arbitrary dimension, combinatorial algorithm
 
 	template<typename val_t>
-	void aHD_Comb(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg) {
+	void aHD_Comb(const double x[], const val_t val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg, const int& target, const AlgSubtype& algSub) {
 		const int pd{ d - target };
 
 		if (d > target) {
 			for (int i = 0; i < m + l; i++) result[i] = numeric_limits<val_t>::max();
-			#pragma omp parallel for default(none), shared(n,d,pd,x,z,m,val,target,ind,l,Alg,result)
+			#pragma omp parallel for default(none), shared(n,d,pd,x,z,m,val,target,ind,l,alg,algSub,result)
 			for (int r = 0; r < nCr(n, pd); r++) {
 				unique_ptr<double[]> pz{ new double[m * target] };
 				unique_ptr<double[]> px{ new double[n * target] };
@@ -1081,8 +1083,8 @@ namespace DataDepth {
 
 					switch (target) {
 					case 1: aHD_d1(px.get(), val, n, pz.get(), m, ind, l, res.get()); break;
-					case 2: aHD_d2(px.get(), val, n, pz.get(), m, ind, l, res.get(), Alg); break;
-					case 3: aHD_d3(px.get(), val, n, pz.get(), m, ind, l, res.get(), Alg); break;
+					case 2: aHD_d2(px.get(), val, n, pz.get(), m, ind, l, res.get(), algSub); break;
+					case 3: aHD_d3(px.get(), val, n, pz.get(), m, ind, l, res.get(), algSub); break;
 					}
 
 					#pragma omp critical
@@ -1098,19 +1100,21 @@ namespace DataDepth {
 		else {
 			switch (d) {
 			case 1: aHD_d1(x, val, n, z, m, ind, l, result); return;
-			case 2: aHD_d2(x, val, n, z, m, ind, l, result, Alg); return;
-			case 3: aHD_d3(x, val, n, z, m, ind, l, result, Alg); return;
+			case 2: aHD_d2(x, val, n, z, m, ind, l, result, algSub); return;
+			case 3: aHD_d3(x, val, n, z, m, ind, l, result, algSub); return;
 			}
 		}
 	}
 
-	// Wrapper for aHD_Comb that does the following preprocessing.
+	/***************************************************************************************************************************/
+
+	// Wrapper for aHD_Comb and aHD_Rec that does the following preprocessing.
 	// Checks whether there are multiple data points.
 	// Checks whether the points are contained in some lower dimensional subspace. If that is the case, the following
 	// computations are done in that lower dimensional subspace.
 
 	template<typename val_t>
-	void aHD_C(const double xx[], const val_t val[], int& nn, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg, const int& nThreads) {
+	void aHD(const double xx[], const val_t val[], int& nn, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
 
 		int nThreadsSav{ omp_get_max_threads() };
 		int NestedSav{ omp_get_nested() };
@@ -1191,160 +1195,45 @@ namespace DataDepth {
 					compHD = true;
 				}
 			}
-			aHD_Comb(px.get(), valX.get(), n, rank, pz.get(), m, newInd.get(), l, target, result, Alg);
+			switch (alg) {
+			case comb: aHD_Comb(px.get(), valX.get(), n, rank, pz.get(), m, newInd.get(), l, result, alg, target, algSub); break;
+			case rec:  aHD_Rec (px.get(), valX.get(), n, rank, pz.get(), m, newInd.get(), l, result, alg, target, algSub); break;
+			}
 			if (compHD) { // compute the halfspace depth of 0 w.r.t. the points px_1,...px_n
 				val_t res = DataDepth::nHD_Comb2(px.get(), valX.get(), n, rank);
 				for (int i = 0; i < m; i++)
 					if (!aHD[i]) result[i] = res;
 			}
 		}
-		else aHD_Comb(x.get(), valX.get(), n, d, z, m, newInd.get(), l, target, result, Alg);
-
+		else switch (alg) {
+		case comb: aHD_Comb(x.get(), valX.get(), n, d, z, m, newInd.get(), l, result, alg, target, algSub); break;
+		case rec:  aHD_Rec (x.get(), valX.get(), n, d, z, m, newInd.get(), l, result, alg, target, algSub); break;
+		}
 		omp_set_num_threads(nThreadsSav);
 		omp_set_nested(NestedSav);
 	}
 
 	template<typename val_t>
-	void aHD_C(const double xx[], nullptr_t, int& nn, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg, const int& nThreads) {
+	void aHD(const double xx[], nullptr_t, int& nn, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
 		unique_ptr<val_t[]> val{ new val_t[nn] };
 		if (is_integral<val_t>::value)
 			for (int i = 0; i < nn; i++) val[i] = 1;
 		else
 			for (int i = 0; i < nn; i++) val[i] = 1.0 / nn;
-		aHD_C(xx, val.get(), nn, d, z, m, ind, l, target, result, Alg, nThreads);
+		aHD(xx, val.get(), nn, d, z, m, ind, l, result, alg, target, algSub, nThreads);
 	}
 
 	template<typename val_t>
-	void aHD_C(const double xx[], int& nn, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg, const int& nThreads) {
-		aHD_C(xx, nullptr, nn, d, z, m, ind, l, target, result, Alg, nThreads);
-	}
-
-	// Wrapper for aHD_Rec that does the following preprocessing.
-	// Checks whether the points are contained in some lower dimensional subspace. If that is the case, the following
-	// computations are done in that lower dimensional subspace.
-
-	template<typename val_t>
-	void aHD_R(const double xx[], const val_t val[], int& nn, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg, const int& nThreads) {
-
-		int nThreadsSav{ omp_get_max_threads() };
-		int NestedSav{ omp_get_nested() };
-		omp_set_num_threads(NumberOfCoresToUse = (nThreads == 0) ? omp_get_num_procs() : min(nThreads, omp_get_num_procs()));
-		omp_set_nested(0);
-
-		unique_ptr<int[]> newInd{ new int[l] };
-		unique_ptr<int[]> perm{ new int[nn] };
-
-		int n{ nn };
-		unique_ptr<pointInfoP<val_t>[]> xp{ new pointInfoP<val_t>[nn] };
-		for (int i = 0; i < nn; i++) {
-			xp[i].x = &xx[i * d];
-			xp[i].val = val[i];
-			xp[i].index = i;
-			perm[i] = i;
-		}
-		if (d > 2) {
-			sort(xp.get(), xp.get() + nn, bind(ltPointsRounded<val_t>, _1, _2, d));
-			int i{ 0 }, j, k{ 0 };
-			while (i < nn) {
-				j = i + 1;
-				while ((j < nn) && (eqPointsRounded(xp[i], xp[j], d))) j++;
-				xp[k].x = xp[i].x;
-				xp[k].val = xp[i].val;
-				perm[xp[i].index] = k;
-				for (int l = i + 1; l < j; l++) {
-					xp[k].val += xp[l].val;
-					perm[xp[l].index] = k;
-				}
-				i = j;
-				k++;
-			}
-			n = k;
-		}
-		unique_ptr<double[]> x{ new double[n * d] };
-		unique_ptr<val_t[]> valX{ new val_t[n] };
-		for (int i = 0; i < n; i++) {
-			for (int j = 0; j < d; j++) x[i * d + j] = xp[i].x[j];
-			valX[i] = xp[i].val;
-		}
-		for (int i = 0; i < l; i++) newInd[i] = perm[ind[i]];
-
-		cMatrix A(d, n);
-		// copy vectors to matrix A
-		for (int i = 0; i < d; i++)
-			for (int j = 0; j < n; j++) A(i, j) = x[j * d + i];
-		cMatrix Q;
-		unique_ptr<double[]> D{ new double[min(n,d)] };
-		unique_ptr<int[]> p{ new int[n] };
-		int rank{};
-		A.QR_Factorization(A, D.get(), p.get(), false, &rank);
-		unique_ptr<int[]> pInv{ new int[n] };
-		unique_ptr<int[]> pind{ new int[l] };
-		unique_ptr<double[]> zz{ new double[m * d] };
-		unique_ptr<double[]> px{ new double[n * rank] };
-		unique_ptr<double[]> pz{ new double[m * rank] };
-		unique_ptr<bool[]> aHD{ new bool[m] {} };
-		bool compHD{ false };
-		if (rank < d) {
-			// Rank deficiency!
-			A.AccumulateHH(D.get(), 0, rank, Q, false, 0, rank);
-			project(Q, x.get(), n, px.get());
-			// project data points z_1,...,z_m
-			A.AccumulateHH(D.get(), 0, rank, Q, false, 0, d);
-			project(Q, z, m, zz.get());
-			// for each point z_i check whether it is in sp(x_1,\dots,x_n)
-			for (int i = 0; i < m; i++) {
-				double norm{ 0.0 };
-				for (int j = rank; j < d; j++) norm += zz[i * d + j] * zz[i * d + j];
-				if (sqrt(norm) < eps) { // z is in sp(x_1,...,x_n)
-					for (int j = 0; j < rank; j++) pz[i * rank + j] = zz[i * d + j];
-					aHD[i] = true;
-				}
-				else {
-					for (int j = 0; j < rank; j++) pz[i * rank + j] = nan("");
-					aHD[i] = false;
-					compHD = true;
-				}
-			}
-			aHD_Rec(px.get(), valX.get(), n, rank, pz.get(), m, newInd.get(), l, target, result, Alg);
-			if (compHD) { // compute the halfspace depth of 0 w.r.t. the points px_1,...px_n
-				val_t res = DataDepth::nHD_Comb2(px.get(), valX.get(), n, rank);
-				for (int i = 0; i < m; i++)
-					if (!aHD[i]) result[i] = res;
-			}
-		}
-		else aHD_Rec(x.get(), valX.get(), n, d, z, m, newInd.get(), l, target, result, Alg);
-
-		omp_set_num_threads(nThreadsSav);
-		omp_set_nested(NestedSav);
-	}
-
-	template<typename val_t>
-	void aHD_R(const double xx[], nullptr_t, int& nn, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg, const int& nThreads) {
-		unique_ptr<val_t[]> val{ new val_t[nn] };
-		if (is_integral<val_t>::value)
-			for (int i = 0; i < nn; i++) val[i] = 1;
-		else
-			for (int i = 0; i < nn; i++) val[i] = 1.0 / nn;
-		aHD_R(xx, val.get(), nn, d, z, m, ind, l, target, result, Alg, nThreads);
-	}
-
-	template<typename val_t>
-	void aHD_R(const double xx[], int& nn, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, val_t result[], const Algorithm& Alg, const int& nThreads) {
-		aHD_R(xx, nullptr, nn, d, z, m, ind, l, target, result, Alg, nThreads);
+	void aHD(const double xx[], int& nn, const int& d, const double z[], int& m, const int ind[], int& l, val_t result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads) {
+		aHD(xx, nullptr, nn, d, z, m, ind, l, result, alg, target, algSub, nThreads);
 	}
 
 	// Explicit instantiation
-	template void aHD_R<int>   (const double x[], const int    val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int    result[], const Algorithm& Alg, const int& nThreads);
-	template void aHD_R<double>(const double x[], const double val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& Alg, const int& nThreads);
+	template void aHD<int>   (const double x[], const int    val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, int    result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads);
+	template void aHD<double>(const double x[], const double val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, double result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads);
 
-	template void aHD_R<int>   (const double x[],                     int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int    result[], const Algorithm& Alg, const int& nThreads);
-	template void aHD_R<double>(const double x[],                     int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& Alg, const int& nThreads);
-
-	template void aHD_C<int>   (const double x[], const int    val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int    result[], const Algorithm& Alg, const int& nThreads);
-	template void aHD_C<double>(const double x[], const double val[], int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& Alg, const int& nThreads);
-
-	template void aHD_C<int>   (const double x[],                     int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, int    result[], const Algorithm& Alg, const int& nThreads);
-	template void aHD_C<double>(const double x[],                     int& n, const int& d, const double z[], int& m, const int ind[], int& l, const int& target, double result[], const Algorithm& Alg, const int& nThreads);
+	template void aHD<int>   (const double x[],                     int& n, const int& d, const double z[], int& m, const int ind[], int& l, int    result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads);
+	template void aHD<double>(const double x[],                     int& n, const int& d, const double z[], int& m, const int ind[], int& l, double result[], const AlgType& alg, const int& target, const AlgSubtype& algSub, const int& nThreads);
 
 
 }
