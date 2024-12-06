@@ -2,36 +2,38 @@
 #'
 #' This function computes the angular halfspace depth (it is not assumed that the points are in general position).
 #'
-#'@param x a matrix of format n x d that contains the data points with respect to which the depth has to be computed
-#'@param mass a vector of length n that contains either the probabilities or the (integer) multiplicities of the n data points
-#'@param z a matrix of format m x d containing the points whose depth should be computed
-#'@param ind a vector of length l containing the indices of the data points x whose depth should be computed
-#'@param alg string, possible values are "comb" and "rec".
+#'@param x a matrix of format \code{n}-times-\code{d} that contains the data points with respect to which the depth has to be computed
+#'@param mass a vector of length \code{n} that contains either the probabilities or the (integer) multiplicities of the \code{n} data points
+#'@param z a matrix of format \code{m}-times-\code{d} containing the points whose depth should be computed
+#'@param ind a vector of length \code{l} containing the indices of the data points \code{x} whose depth should be computed
+#'@param alg a string, possible values are \code{"comb"} and \code{"rec"}.
 #'Denotes the algorithm that is used to compute the signed halfspace depth in the target dimension.
 #'
-#'If alg="comb" the combinatorial algorithm is used to compute the angular halfspace depth. If alg="rec" the recursive algorithm is used. For details, see Dyckerhoff, Nagy (2024).
-#'@param target the dimension to which the data is projected, possible values are 1, 2, 3
-#'@param method string, possible values are "standard", "adaptive", "single", "multiple", "nGP", "GP".
+#'If \code{alg="comb"}, the combinatorial algorithm is used to compute the angular halfspace depth. If \code{alg="rec"} the recursive algorithm is used. For details, see Dyckerhoff and Nagy (2024).
+#'@param target the dimension to which the data is projected, possible values are \code{1}, \code{2}, or \code{3}
+#'@param method a string, possible values are \code{"standard"}, \code{"adaptive"}, \code{"single"}, \code{"multiple"}, \code{"nGP"}, \code{"GP"}.
 #'Denotes the variant of the algorithm that is used to compute the signed halfspace depth in the target dimension.
 #'
-#'For target=2 only "standard", "adaptive", "single", "multiple" are valid. For target=2 "standard" is the same as "adaptive", meaning that depending on the number of points for which the depth has to be computed, either "single" or "multiple" is selected.
+#'For \code{target=2}, only \code{"standard"}, \code{"adaptive"}, \code{"single"}, \code{"multiple"} are valid.
+#'For \code{target=2}, \code{method="standard"} is the same as \code{method="adaptive"}, meaning that depending on the number of points for which the depth has to be computed, either \code{"single"} or \code{"multiple"} is selected.
 #'
-#'For target=3 only "standard", "nGP", "GP" are valid. For target=3 "standard" is the same as "nGP", meaning that the points do not have to be in general position. If method = "GP", then is is assumed that all points are in general position, so that a faster algorithm can be used.
+#'For \code{target=3}, only \code{"standard"}, \code{"nGP"}, \code{"GP"} are valid.
+#'For \code{target=3}, \code{method=} \code{"standard"} is the same as \code{method="nGP"}, meaning that the points do not have to be in general position. If \code{method="GP"}, then it is assumed that all points are in general position, so that a faster algorithm can be used.
 #'
-#'@param nThreads the number of threads to use in a multiprocessor environment. For the default 0 the number of threads is automatically chosen depending on the used hardware.
-#'@return a vector of length m + l containing the angular halfspace depths of the points z and the data points x whose indices are given in ind.
-#'If the argument 'mass' is missing or if an integer vector is supplied for 'mass', then the depths are given as integer values, i.e., multiplied by n.
-#'If a double vector is supplied for the argument 'mass', then the depths are given as doubles.
+#'@param nThreads the number of threads to use in a multiprocessor environment. For the default \code{0}, the number of threads is automatically chosen depending on the used hardware.
+#'@return a vector of length \code{m+l} containing the angular halfspace depths of the points \code{z} and the data points \code{x} whose indices are given in \code{ind}.
+#'If the argument \code{mass} is missing or if an integer vector is supplied for \code{mass}, then the depths are given as integer values, i.e., multiplied by \code{n}.
+#'If a double vector is supplied for the argument \code{mass}, then the depths are given as doubles.
 #'
 #'@details
-#'Unless target= 3 and method='GP', the algorithm does not assume that the points are in general position. The points in z may coincide with points in x. z or ind may be missing (but not both).
+#'Unless \code{target=3} and \code{method="GP"}, the algorithm does not assume that the points are in general position. The points in \code{z} may coincide with points in \code{x}. \code{z} or \code{ind} may be missing. If both \code{z} and \code{ind} are missing, thenthe depths of all points in \code{x} are calculated.
 #'
-#'Regarding the choice of parameters 'alg', 'target' and 'method' the default values usually will give the best results.
-#'In most cases the combiantorial algorithm (alg="comb") called with the default values for 'target' and 'method' will give the best results.
+#'Regarding the choice of parameters \code{alg}, \code{target}, and \code{method}, the default values usually will give the best results.
+#'In most cases the combinatorial algorithm (\code{alg="comb"}) called with the default values for \code{target} and \code{method} will give the best results.
 #'
 #'
 #'
-#'@references Dyckerhoff, R., Nagy, S. (2024). Exact computation of angular halfspace depth.
+#'@references Dyckerhoff, R., and Nagy, S. (2024). Exact computation of angular halfspace depth.
 #'
 #'@author Rainer Dyckerhoff
 #'
@@ -40,9 +42,9 @@
 #'
 #'@examples
 #'d <- 4
-#'n <- 200
-#'m <- 200
-#'l <- 200
+#'n <- 50
+#'m <- 50
+#'l <- 50
 #'# simulate data uniformly distributed on the sphere
 #'x <- matrix(rnorm(n*d),nrow=n)
 #'x <- x / sqrt(rowSums(x*x))
@@ -56,58 +58,58 @@
 #'res <- matrix(nrow=30, ncol=m+l)
 #'
 #'# combinatorial algorithm, w/o argument 'mass', different target dimensions and methods
-#'system.time(res[ 1,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 1))
-#'system.time(res[ 2,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 2, method = "single"))
-#'system.time(res[ 3,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple"))
-#'system.time(res[ 4,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP"))
-#'system.time(res[ 5,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP"))
+#'res[ 1,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 1)
+#'res[ 2,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 2, method = "single")
+#'res[ 3,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple")
+#'res[ 4,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP")
+#'res[ 5,] <- ahD(x, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP")
 #'
 #'# combinatorial algorithm, pass a vector of probabilities to mass, different target dimensions
 #'# and methods
-#'system.time(res[ 6,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 1))
-#'system.time(res[ 7,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 2, method = "single"))
-#'system.time(res[ 8,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple"))
-#'system.time(res[ 9,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP"))
-#'system.time(res[10,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP"))
+#'res[ 6,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 1)
+#'res[ 7,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 2, method = "single")
+#'res[ 8,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple")
+#'res[ 9,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP")
+#'res[10,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP")
 #'# multiply by n since the depths are since we want to compare with the integer version of the depth
 #'res[6:10,] <- res[6:10,] * n
 #'
 #'# combinatorial algorithm, pass a vector of multiplicities to mass, different target dimensions
 #'# and methods
-#'system.time(res[11,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 1))
-#'system.time(res[12,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 2, method = "single"))
-#'system.time(res[13,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple"))
-#'system.time(res[14,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP"))
-#'system.time(res[15,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP"))
+#'res[11,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 1)
+#'res[12,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 2, method = "single")
+#'res[13,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 2, method = "multiple")
+#'res[14,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 3, method = "nGP")
+#'res[15,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "comb", target = 3, method = "GP")
 #'
 #'# recursive algorithm, w/o argument 'mass', different target dimensions and methods
-#'system.time(res[16,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 1))
-#'system.time(res[17,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 2, method = "single"))
-#'system.time(res[18,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple"))
-#'system.time(res[19,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP"))
-#'system.time(res[20,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP"))
+#'res[16,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 1)
+#'res[17,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 2, method = "single")
+#'res[18,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple")
+#'res[19,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP")
+#'res[20,] <- ahD(x, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP")
 #'
 #'# recursive algorithm, pass a vector of probabilities to mass, different target dimensions
 #'# and methods
-#'system.time(res[21,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 1))
-#'system.time(res[22,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 2, method = "single"))
-#'system.time(res[23,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple"))
-#'system.time(res[24,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP"))
-#'system.time(res[25,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP"))
+#'res[21,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 1)
+#'res[22,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 2, method = "single")
+#'res[23,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple")
+#'res[24,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP")
+#'res[25,] <- ahD(x, mass = prob, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP")
 #'# multiply by n since the depths are since we want to compare with the integer version of the depth
-#'res[6:10,] <- res[21:25,] * n
+#'res[21:25,] <- res[21:25,] * n
 #'
 #'# recursive algorithm, pass a vector of multiplicities to mass, different target dimensions
 #'# and methods
-#'system.time(res[26,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 1))
-#'system.time(res[27,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 2, method = "single"))
-#'system.time(res[28,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple"))
-#'system.time(res[29,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP"))
-#'system.time(res[30,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP"))
+#'res[26,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 1)
+#'res[27,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 2, method = "single")
+#'res[28,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 2, method = "multiple")
+#'res[29,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 3, method = "nGP")
+#'res[30,] <- ahD(x, mass = count, z = z, ind = 1:l, alg = "rec", target = 3, method = "GP")
 #'
 #'print(paste("Number of different results:  ",sum(apply(res, 2, max) - apply(res, 2, min) > 1e-13)))
 
-ahD <- function(x, mass = NULL, z = NULL, ind = NULL, alg = c("comb", "rec"), target = 2, method = c("standard", "adaptive", "single", "multiple", "nGP", "GP"), nThreads = 0) {
+ahD <- function(x, mass = NULL, z = NULL, ind = if (missing(z)) 1:nrow(as.matrix(x)) else NULL, alg = c("comb", "rec"), target = 2, method = c("standard", "adaptive", "single", "multiple", "nGP", "GP"), nThreads = 0) {
   alg <- match.arg(alg)
   alg <- switch(alg,
                 comb = 0,

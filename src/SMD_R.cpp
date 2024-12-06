@@ -151,7 +151,6 @@ namespace DataDepth {
 
 	template<typename val_t>
 	bool ltPointsRounded(const pointInfoP<val_t>& a, const pointInfoP<val_t>& b, int d) {
-		bool result{ false };
 		for (int i = 0; i < d; i++) {
 			double x{ RoundBinary(a.x[i]) }, y{ RoundBinary(b.x[i]) };
 			if (x < y) return true;
@@ -1013,7 +1012,7 @@ namespace DataDepth {
 			int pd{ d - 1 };
 
 			for (int i = 0; i < m + l; i++) result[i] = numeric_limits<val_t>::max();
-			#pragma omp parallel for default(none), shared(n,d,pd,x,z,m,val,target,ind,l,alg,algSub,result)
+      #pragma omp parallel for default(none) shared(x,val,n,d,z,m,ind,l,result,alg,target,algSub) firstprivate(pd)
 			for (int i = 0; i < n; i++) {
 				if (!isnan(x[i * d])) {
 					unique_ptr<double[]> pz{ new double[m * (d - 1)] {} };
@@ -1056,7 +1055,7 @@ namespace DataDepth {
 
 		if (d > target) {
 			for (int i = 0; i < m + l; i++) result[i] = numeric_limits<val_t>::max();
-			#pragma omp parallel for default(none), shared(n,d,pd,x,z,m,val,target,ind,l,alg,algSub,result)
+      #pragma omp parallel for default(none) shared(x,val,n,d,z,m,ind,l,result,alg,target,algSub) firstprivate(pd)
 			for (int r = 0; r < nCr(n, pd); r++) {
 				unique_ptr<double[]> pz{ new double[m * target] };
 				unique_ptr<double[]> px{ new double[n * target] };
